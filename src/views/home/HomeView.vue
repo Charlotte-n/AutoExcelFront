@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElAlert } from 'element-plus'
+//@ts-ignore
+import LuckyExcel from 'luckyexcel/dist/luckyexcel.esm'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const tableData1 = ref([])
 const tableData2 = ref([
@@ -83,15 +88,6 @@ onMounted(() => {
   })
 })
 
-const beforeUpload = (file: any) => {
-  const isExcel =
-    file.type === 'application/vnd.ms-excel' ||
-    file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  if (!isExcel) {
-    // this.$message.error('上传文件格式必须为Excel文档！');
-  }
-  return isExcel
-}
 // 上传成功
 const handleSuccess = () => {
   ElMessage({
@@ -129,14 +125,14 @@ const checkRight = (row: any) => {
 // 点击去右边
 const right = () => {
   tableData2.value = tableData2.value.concat(nowSelectData.value)
-  handleRemoveTabList(nowSelectData, tableData1)
+  handleRemoveTabList(nowSelectData.value, tableData1.value)
   // 按钮禁用
   nowSelectData.value = []
 }
 // 点击去左边
 const left = () => {
   tableData1.value = tableData1.value.concat(nowSelectRightData.value)
-  handleRemoveTabList(nowSelectRightData, tableData2)
+  handleRemoveTabList(nowSelectRightData.value, tableData2.value)
   // 按钮禁用
   nowSelectRightData.value = []
 }
@@ -225,6 +221,56 @@ const submitForm = () => {
 
   console.log(JSON.stringify(mergedData))
 }
+
+//#region 显示上传弹窗
+const showUploadModal = () => {
+  dialogVisibleForm.value = true
+  if (window.luckysheet) {
+    window.luckysheet.destroy()
+  }
+}
+//#endregion
+
+//#region 导入EXCEL文件
+const uploadExcel = (file: any) => {
+  const suffixArr = file.name.split('.'),
+    suffix = suffixArr[suffixArr.length - 1]
+  if (suffix !== 'xlsx') {
+    ElMessage({
+      message: '上传的文件必须为xsxl文件',
+      type: 'success'
+    })
+    return
+  }
+  LuckyExcel.transformExcelToLucky(file, (exportJson: any, luckysheetfile: any) => {
+    if (exportJson.sheets == null || exportJson.sheets.length === 0) {
+      ElMessage({
+        message: '不能读取excel文件内容，当前不支持这个xls文件',
+        type: 'error'
+      })
+      return
+    }
+    if (window.luckysheet) {
+      window.luckysheet.destroy()
+    }
+    window.luckysheet.create({
+      lang: 'zh',
+      container: 'luckysheet',
+      showinfobar: false,
+      data: exportJson.sheets,
+      title: exportJson.info.name,
+      userInfo: exportJson.info.name.creator
+    })
+  })
+}
+//#endregion
+
+//#region 跳转到EXCEL
+const navigateExcel = () => {
+  router.push('/viewExcel/123')
+}
+
+//#endregion
 </script>
 
 <template>
@@ -268,14 +314,7 @@ const submitForm = () => {
             <span class="mainBoxText3">{{ time }}</span>
           </div>
           <div class="mainBoxBottom">
-            <el-button
-              class="mainBoxButton1"
-              type="text"
-              @click="
-                () => {
-                  dialogVisibleForm = true
-                }
-              "
+            <el-button class="mainBoxButton1" type="text" @click="showUploadModal"
               >上传表格</el-button
             ><!--未写-->
             <el-button
@@ -288,7 +327,9 @@ const submitForm = () => {
               "
               >绑定模块</el-button
             >
-            <el-button class="mainBoxButton3" type="text">查阅数据</el-button>
+            <el-button class="mainBoxButton3" type="text" @click="navigateExcel"
+              >查阅数据</el-button
+            >
           </div>
         </div>
       </div>
@@ -304,14 +345,26 @@ const submitForm = () => {
       <el-upload
         class="upload-demo"
         action="/uploadExcel"
-        :before-upload="beforeUpload"
+        :before-upload="uploadExcel"
         :on-success="handleSuccess"
         :on-error="handleError"
       >
         <el-button type="primary" style="margin-top: 10px"
           >点击上传(仅支持第一行为表头格式的Excel文件上传)</el-button
         >
-        <div class="preview">{{ excelHeader }}</div>
+        <div
+          id="luckysheet"
+          style="
+            margin: 0px;
+            padding: 0px;
+            position: absolute;
+            width: 100%;
+            height: 400px;
+            left: 0px;
+            top: 160px;
+            bottom: 0px;
+          "
+        ></div>
       </el-upload>
     </el-dialog>
 
@@ -493,7 +546,6 @@ const submitForm = () => {
 }
 .boxLeftTop1 {
   display: flex;
-  height: 39%;
   width: 50%;
 }
 .boxLeftTop1Button {
