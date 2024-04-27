@@ -4,6 +4,7 @@ import { ElMessage, ElMessageBox, ElAlert } from 'element-plus'
 //@ts-ignore
 import LuckyExcel from 'luckyexcel/dist/luckyexcel.esm'
 import { useRouter } from 'vue-router'
+import { CreateFormApi } from '@/apis/home'
 
 const router = useRouter()
 
@@ -25,16 +26,6 @@ const tableData2 = ref([
 let nowSelectData = ref([])
 // 右数据
 let nowSelectRightData = ref([])
-
-//新建表格
-let dialogVisibleNewForm = ref(false)
-//表格
-const form = {
-  name: '',
-  style: '',
-  desc: '',
-  group: ''
-}
 
 //上传表格
 const dialogVisibleForm = ref(false)
@@ -271,6 +262,53 @@ const navigateExcel = () => {
 }
 
 //#endregion
+
+//#region 创建表单，定义规则
+const rules = ref({
+  title: [{ required: true, message: '名称不能为空', trigger: 'blur' }],
+  category: [{ required: true, message: '类型不能为空', trigger: 'blur' }],
+  desc: [{ required: true, message: '描述不能为空', trigger: 'blur' }],
+  group: [{ required: true, message: '分组不能为空', trigger: 'blur' }]
+})
+let dialogVisibleNewForm = ref(false)
+const formRef = ref<any>()
+//表格
+const form = ref({
+  title: '',
+  category: '',
+  desc: '',
+  group: ''
+})
+//新建填报
+const createForm = async () => {
+  try {
+    const res = await CreateFormApi(form.value)
+    await formRef.value.validate((valid: any, fields: any) => {
+      if (valid) {
+        ElMessage({
+          type: 'success',
+          message: '创建成功',
+          plain: true
+        })
+        dialogVisibleNewForm.value = false
+        console.log('submit!')
+      } else {
+        ElMessage({
+          type: 'warning',
+          message: '请填写内容',
+          plain: true
+        })
+        console.log('error submit!', fields)
+      }
+    })
+
+    console.log(res)
+  } catch (e) {
+    console.log(e, '新建填报接口出错了')
+  }
+}
+
+//#endregion
 </script>
 
 <template>
@@ -484,20 +522,20 @@ const navigateExcel = () => {
       width="600px"
       :before-close="handleClose"
     >
-      <el-form ref="form" :model="form" label-width="80px">
-        <el-form-item label="名称:">
-          <el-input v-model="form.name"></el-input>
+      <el-form ref="formRef" :model="form" label-width="80px" :rules="rules">
+        <el-form-item label="名称:" prop="title">
+          <el-input v-model="form.title"></el-input>
         </el-form-item>
-        <el-form-item label="类型:">
-          <el-select v-model="form.style" placeholder="请选择类型">
+        <el-form-item label="类型:" prop="category">
+          <el-select v-model="form.category" placeholder="请选择类型">
             <el-option label="Excel<------>表单" value="excel"></el-option>
             <el-option label="无" value="wu"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="描述:">
+        <el-form-item label="描述:" prop="desc">
           <el-input type="textarea" v-model="form.desc" class="custom-input"></el-input>
         </el-form-item>
-        <el-form-item label="分组:">
+        <el-form-item label="分组:" prop="group">
           <el-select v-model="form.group" placeholder="请选择分组">
             <el-option label="默认分组" value="style1"></el-option>
             <el-option label="一级分组" value="style2"></el-option>
@@ -507,7 +545,7 @@ const navigateExcel = () => {
 
       <span class="dialog-footer">
         <el-button @click="dialogVisibleNewForm = false">取 消</el-button>
-        <el-button type="primary" @click="newForm()">确 定</el-button>
+        <el-button type="primary" @click="createForm">确 定</el-button>
       </span>
     </el-dialog>
   </div>
