@@ -252,6 +252,20 @@ const uploadExcel = (file: any) => {
       title: exportJson.info.name,
       userInfo: exportJson.info.name.creator
     })
+
+    const res = window.luckysheet.getAllSheets()[0].celldata
+    const result = []
+    //进行循环
+    res.forEach(
+      (item: {
+        v: {
+          v
+        }
+      }) => {
+        result.push(item.v.v)
+      }
+    )
+    console.log(res, result)
   })
 }
 //#endregion
@@ -307,6 +321,14 @@ const createForm = async () => {
     console.log(e, '新建填报接口出错了')
   }
 }
+
+//#endregion
+
+//#region 获取第一行的数据
+// const getFirstRow = () => {
+//   const res  = luckysheet.getCellValue(0, 0)
+//   console.log(res)
+// }
 
 //#endregion
 </script>
