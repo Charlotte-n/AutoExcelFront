@@ -4,7 +4,8 @@ import type { CommonResponse } from '@/apis/types/CommonResponse'
 
 enum BASEURL {
   SAVE_LUCKY_SHEET = '/saveLuckySheet',
-  CREATE_FORM = '/createForm'
+  CREATE_FORM = '/createForm',
+  RENDER_SHEET = '/renderSheet'
 }
 
 /**
@@ -30,5 +31,18 @@ export const CreateFormApi = (data: CreateFormParamType) => {
   return hyRequest.post<CommonResponse<CreateFormDataType>>({
     url: BASEURL.CREATE_FORM,
     data
+  })
+}
+
+/**
+ * 渲染工作表
+ * @param id
+ */
+export const renderSheetApi = (id: number) => {
+  return hyRequest.get({
+    url: BASEURL.RENDER_SHEET,
+    params: {
+      id
+    }
   })
 }
